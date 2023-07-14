@@ -1,0 +1,30 @@
+body {
+  background-color: rgba(65, 107, 178, 0.37);
+}
+
+.breed-select {
+  height: 30px;
+  width: 180px;
+  display: block;
+  margin: 0 auto;
+}
+
+.loader {
+  /* margin-top: 25px; */
+  display: none;
+}
+
+.error {
+  /* margin-top: 25px; */
+  display: none;
+}
+
+.cat-info {
+  display: block;
+  text-align: center;
+  margin: 20px;
+}
+
+.cat-img {
+  margin-top: 20px;
+}
