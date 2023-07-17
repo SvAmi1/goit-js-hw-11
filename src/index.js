@@ -1,65 +1,119 @@
-import axios from "axios";
 import './main.css';
-import { fetchBreeds, fetchCatByBreed } from './cat-api';
+import {fetchImgs} from './fetchImg';
+import axios from "axios";
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
-import { Loading } from 'notiflix/build/notiflix-loading-aio';
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
 
-const API_KEY = "38225856-55cf092e00195e84cd316d5f4";
-const BASE_URL = "https://pixabay.com/api/";
+// const API_KEY = '38225856-55cf092e00195e84cd316d5f4';
+// const BASE_URL = 'https://pixabay.com/api/';
 
-axios.defaults.headers.common["x-api-key"] = API_KEY;
+const formEl = document.querySelector('.search-form');
+const galleryEl = document.querySelector('.gallery');
+const loadMoreBtn = document.querySelector('.load-more');
 
+const lightbox = new SimpleLightbox('.gallery a', {
+    captionsData: 'alt',
+    captionPosition: 'bottom',
+    captionDelay: '250',
+  });
 
+let searchQuery = '';
+let page = 1;
+const perPage = 40;
 
+formEl.addEventListener('submit', handleForm);
+loadMoreBtn.addEventListener('click', handleLoadMoreBtn);
 
-const infoBox = document.querySelector('.cat-info');
-const selectorEl = document.querySelector('.breed-select');
+// loadMoreBtn.style.display = 'none';
 
+function handleForm(evt) {
+    evt.preventDefault();
+ 
+    searchQuery = evt.target.elements.searchQuery.value.trim();
+    page = 1;
+  
+    if (!searchQuery) {
+      Notify.failure('Please enter your search query');
+      return;
+    }
+  
+    // await fetchImgs();
 
+    formEl.reset();
+    // loadMoreBtn.disabled = true;
+    galleryEl.style.display = 'none'
 
-function makeSelectorOfCats() {
-    loaderIsActive();
-    fetchBreeds()
-    .then((data) => { 
-        selectorEl.innerHTML = data.map(({id, name}) => `<option value='${id}'>${name}</option>`).join("");
-        // loaderEl.style.display = 'block';
-    })
-    .catch(error => {console.log(error);
-    // errorEl.style.display = 'block'
-    Notify.failure('Oops! Something went wrong! Try reloading the page!')}
-    )
+    renderCardsMarkup();
+  
+  async function renderCardsMarkup() {
+    try {
+      const { data: resp } = await fetchImgs(searchQuery, page, perPage);
+      if (searchQuery === '') {
+        return Notify.failure(
+          "Sorry, there are no images matching your search query. Please try again."
+        );
+      }
+      if (resp.totalHits === 0) {
+        return Notify.failure(
+          "We're sorry, but you've reached the end of search results."
+        );
+      } else {
+          showInfo(resp.hits);
+          galleryEl.style.display = 'flex';
+          galleryEl.style.flexWrap = 'wrap';
+          galleryEl.style.gap = '48px 24px';
+        Notify.success(`Hooray! We found ${resp.totalHits} images.`);
+        lightbox.refresh();
+        if (resp.totalHits > perPage) {
+            loadMoreBtn.style.display = 'block'
+        }
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
 }
-makeSelectorOfCats();
 
-function renderBreedList(data) {
-    const breed = data.breeds[0];
+async function handleLoadMoreBtn(){
+    page +=1
+    try {
+      const { data: resp } = await fetchImgs(searchQuery, page, perPage);
+      showInfo(resp.hits);
+      lightbox.refresh();
+      const totalPages = Math.ceil(resp.totalHits / perPage)
+      if (page === totalPages) {
+        btnLoadMore.style.display = 'none'
+          Notify.info("We're sorry, but you've reached the end of search results.");
+      }
+  }
+  catch (error) {
+      console.log(error);
+  }
+  }
 
-    const murkup = `
-      <img class="cat-img" src="${data.url}" alt="${breed.name}" width="400">
-      <h1>${breed.name}</h1>
-      <p>${breed.description}</p>
-      <h2>Temperament: ${breed.temperament}</h2>
-    `;
-    infoBox.innerHTML = murkup;
-}
-
-function addBreedInfo() {
-    loaderIsActive();
-      
-    fetchCatByBreed(selectorEl.value)
-    .then(data => renderBreedList(data))
-    .catch(error => {console.log(error);
-        // errorEl.style.display = 'block',
-    Notify.failure('Oops! Something went wrong! Try reloading the page!')}
-    )
-}
-
-function loaderIsActive() {
-    Loading.dots('Loading data, please wait...', {
-        backgroundColor:'rgba(0,0,0,0.8)',
-        });
-    Loading.remove(1000);
-}
-
-selectorEl.addEventListener('change', addBreedInfo);
-
+  function showInfo(images) {
+    const galleryMarkup = images.map(
+        ({
+            webformatURL,
+            largeImageURL,
+            tags,
+            likes,
+            views,
+            comments,
+            downloads,
+        }) => {
+            return `<a class="gallery__link" href="${largeImageURL}">
+            <div class="photo-card">
+                <img src="${webformatURL}" alt="${tags}" loading="lazy" height="100" />
+                <div class="info">
+                <p class="info-item"><b>Likes</b> ${likes}</p> 
+                <p class="info-item"><b>Views</b> ${views}</p>
+                <p class="info-item"><b>Comments</b> ${comments}</p>
+                <p class="info-item"><b>Downloads</b> ${downloads}</p>
+              </div>
+            </div>
+            </a>`
+        }).join('');
+    galleryEl.insertAdjacentHTML('beforeend', galleryMarkup);
+  }    
