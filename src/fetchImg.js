@@ -9,7 +9,6 @@ export const fetchImgs = async (searchQuery, page, perPage) => {
     safesearch: true,
     page: page,
     per_page: perPage,
-    credentials: 'include',
   });
   const resp = await axios.get(`${BASE_URL}?${params.toString()}`);
   return resp;
