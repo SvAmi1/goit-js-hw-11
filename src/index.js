@@ -35,29 +35,33 @@ function handleForm(evt) {
   
     if (!searchQuery) {
       Notify.failure('Please enter your search query');
+      loadMoreBtn.disabled = true;
       return;
     }
   
     // await fetchImgs();
 
     formEl.reset();
-    // loadMoreBtn.disabled = true;
+    loadMoreBtn.disabled = true;
     galleryEl.style.display = 'none'
 
     renderCardsMarkup();
   
   async function renderCardsMarkup() {
+    const loadMoreBtn = document.querySelector('.load-more');
     try {
       const { data: resp } = await fetchImgs(searchQuery, page, perPage);
       if (searchQuery === '') {
         return Notify.failure(
           "Sorry, there are no images matching your search query. Please try again."
         );
+        loadMoreBtn.style.display = 'none'
       }
       if (resp.totalHits === 0) {
         return Notify.failure(
           "We're sorry, but you've reached the end of search results."
         );
+        loadMoreBtn.style.display = 'none'
       } else {
           showInfo(resp.hits);
           galleryEl.style.display = 'flex';
